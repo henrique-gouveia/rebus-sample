@@ -14,6 +14,7 @@ using Rebus.Transport.InMem;
 using Core;
 using Mail.Commands;
 using Mail.Events;
+using Rebus.Logging;
 
 namespace Mail.Producer
 {
@@ -40,8 +41,11 @@ namespace Mail.Producer
                 //.Transport(t => t.UseInMemoryTransport(new InMemNetwork(), mailsQueueName))
                 //.Subscriptions(s => s.StoreInMemory())
                 
+                // # 1 - Sigle (RabbitMQ)
+                //.Transport(t => t.UseRabbitMq("amqp://localhost", mailsQueueName))
+
                 // # 2 - Distributed (RabbitMQ)
-                .Transport(t => t.UseRabbitMq("amqp://localhost", mailsQueueName))
+                .Transport(t => t.UseRabbitMqAsOneWayClient("amqp://localhost"))
 
                 // Common
                 .Routing(r =>
@@ -50,9 +54,10 @@ namespace Mail.Producer
                         .MapAssemblyOf<Message>(mailsQueueName)
                         .MapAssemblyOf<SendMailCommand>(mailsQueueName);
                 })
+                .Logging(l => l.ColoredConsole(minLevel: LogLevel.Info))
                 .Options(o =>
                 {
-                    o.SetNumberOfWorkers(1);
+                    //o.SetNumberOfWorkers(1);
                     o.SetMaxParallelism(1);
                     o.SetBusName("Rebus Mail Sample");
                     o.SimpleRetryStrategy(
@@ -64,10 +69,10 @@ namespace Mail.Producer
             // Register handlers 
 
             // # 1 - Single
+            // services.AddRebusHandler<MailCommandHandler>();
+            // services.AddRebusHandler<MailEventHandler>();
+            // Or...
             // services.AutoRegisterHandlersFromAssemblyOf<MailCommandHandler>();
-            
-            // # 2 - Distributed
-            services.AddRebusHandler<MailCommandHandler>();
 
             services.AddControllers();
         }

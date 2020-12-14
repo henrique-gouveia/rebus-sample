@@ -12,6 +12,7 @@ using Core;
 
 using Mail.Commands;
 using Mail.Events;
+using Rebus.Logging;
 
 namespace Mail.Consumer
 {
@@ -47,6 +48,7 @@ namespace Mail.Consumer
                                 .MapAssemblyOf<Message>(mailsQueueName)
                                 .MapAssemblyOf<SendMailCommand>(mailsQueueName);
                         })
+                        .Logging(l => l.ColoredConsole(minLevel: LogLevel.Debug))
                         .Options(o =>
                         {
                             o.SetNumberOfWorkers(1);
@@ -56,7 +58,10 @@ namespace Mail.Consumer
                         })
                     );
 
-                    services.AddRebusHandler<MailEventHandler>();
+                    // services.AddRebusHandler<MailCommandHandler>();
+                    // services.AddRebusHandler<MailEventHandler>();
+                    // Or...
+                    services.AutoRegisterHandlersFromAssemblyOf<MailCommandHandler>();
 
                     services.BuildServiceProvider().UseRebus(async c =>
                     {
