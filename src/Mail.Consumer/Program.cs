@@ -34,11 +34,11 @@ namespace Mail.Consumer
                     var mailsQueueErrorName = "mails.send.error";
 
                     services.AddRebus(configure => configure
-                        // # 1 - Single (InMemory)
+                        // # 1 - Producer/Consumer (InMemory)
                         //.Transport(t => t.UseInMemoryTransport(new InMemNetwork(), mailsQueueName))
                         //.Subscriptions(s => s.StoreInMemory())
 
-                        // # 2 - Distributed (RabbitMQ)
+                        // # 2 - Only Producer (RabbitMQ)
                         .Transport(t => t.UseRabbitMq("amqp://localhost", mailsQueueName))
 
                         // Common
@@ -51,10 +51,15 @@ namespace Mail.Consumer
                         .Logging(l => l.ColoredConsole(minLevel: LogLevel.Debug))
                         .Options(o =>
                         {
+                            // Only Consumer
                             o.SetNumberOfWorkers(1);
+
+                            // Common
                             o.SetMaxParallelism(1);
                             o.SetBusName("Rebus Mail Sample");
-                            o.SimpleRetryStrategy(mailsQueueErrorName);
+                            o.SimpleRetryStrategy(
+                                errorQueueAddress: mailsQueueErrorName,
+                                maxDeliveryAttempts: 1);
                         })
                     );
 

@@ -9,7 +9,7 @@ using Mail.Events;
 
 namespace Mail
 {
-    public class MailCommandHandler :
+    public sealed class MailCommandHandler :
         IHandleMessages<SendMailCommand>
     {
         private readonly IBus bus;
@@ -23,11 +23,11 @@ namespace Mail
 
             if (sended)
             {
-                await bus.Publish(new MailSentEvent(message.From, message.To, message.Subject));
+                await bus.Publish(new MailSentEvent(message.From, message.To, message.Subject, message.Message));
                 return;
             }
 
-            await bus.Publish(new MailUnsentEvent(message.From, message.To, message.Subject));
+            await bus.Publish(new MailUnsentEvent(message.From, message.To, message.Subject, message.Message));
         }
     }
 }

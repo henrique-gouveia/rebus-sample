@@ -37,15 +37,15 @@ namespace Mail.Producer
             var mailsQueueErrorName = "mails.send.error";
 
             services.AddRebus(configure => configure
-                // # 1 - Single (InMemory)
-                //.Transport(t => t.UseInMemoryTransport(new InMemNetwork(), mailsQueueName))
-                //.Subscriptions(s => s.StoreInMemory())
-                
-                // # 1 - Sigle (RabbitMQ)
+                // # 1 - Producer/Consumer (InMemory)
+                .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), mailsQueueName))
+                .Subscriptions(s => s.StoreInMemory())
+
+                // # 2 - Producer/Consumer (RabbitMQ)
                 //.Transport(t => t.UseRabbitMq("amqp://localhost", mailsQueueName))
 
-                // # 2 - Distributed (RabbitMQ)
-                .Transport(t => t.UseRabbitMqAsOneWayClient("amqp://localhost"))
+                // # 3 - Only Producer (RabbitMQ)
+                //.Transport(t => t.UseRabbitMqAsOneWayClient("amqp://localhost"))
 
                 // Common
                 .Routing(r =>
@@ -57,22 +57,25 @@ namespace Mail.Producer
                 .Logging(l => l.ColoredConsole(minLevel: LogLevel.Info))
                 .Options(o =>
                 {
-                    //o.SetNumberOfWorkers(1);
+                    // Only Consumer
+                    o.SetNumberOfWorkers(1);
+
+                    // Common
                     o.SetMaxParallelism(1);
                     o.SetBusName("Rebus Mail Sample");
                     o.SimpleRetryStrategy(
                         errorQueueAddress: mailsQueueErrorName,
-                        secondLevelRetriesEnabled: true);
+                        maxDeliveryAttempts: 1);
                 })
             );
 
             // Register handlers 
 
-            // # 1 - Single
+            // # 1, 2 - Producer/Consumer
             // services.AddRebusHandler<MailCommandHandler>();
             // services.AddRebusHandler<MailEventHandler>();
             // Or...
-            // services.AutoRegisterHandlersFromAssemblyOf<MailCommandHandler>();
+            services.AutoRegisterHandlersFromAssemblyOf<MailCommandHandler>();
 
             services.AddControllers();
         }
@@ -91,15 +94,15 @@ namespace Mail.Producer
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Demo Rebus Mail");
             });
 
-            // # 1 - Single
-            //app.ApplicationServices.UseRebus(async c =>
-            //{
-            //    await c.Subscribe<MailSentEvent>();
-            //    await c.Subscribe<MailUnsentEvent>();
-            //});
+            // # 1, 2 - Producer/Consumer
+            app.ApplicationServices.UseRebus(async c =>
+            {
+                await c.Subscribe<MailSentEvent>();
+                await c.Subscribe<MailUnsentEvent>();
+            });
 
-            // # 2 - Distributed
-            app.ApplicationServices.UseRebus();
+            // # 3 - Only Producer
+            //app.ApplicationServices.UseRebus();
 
             app.UseRouting();
             app.UseEndpoints(endpoints =>
