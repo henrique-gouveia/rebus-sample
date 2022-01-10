@@ -1,3 +1,3 @@
 # Rebus Sample
 
-Simple Rebus Sample InMemory and Integrated with RabbitMQ
+Usin Rebus InMemory and Integrated with RabbitMQ
